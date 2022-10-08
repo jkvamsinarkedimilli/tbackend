@@ -12,7 +12,7 @@ exports.adduser = async (req, res, next) => {
       password: req.body.password,
     });
     const token = jwt.sign({id:newUser._id},process.env.JWT_SECRET,{expiresIn:process.env.JWT_EXPIRES_IN});
-    console.log(newUser,token);
+    console.log("New User",newUser,token);
     const userdetail = await UserDetail.create({
       username: req.body.username,
       watchlist: [],
@@ -114,36 +114,41 @@ exports.getwatchlist = async (req, res) => {
     console.log(e);
   }
 };
-////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 //Checking whether a user is authenticated or not
 exports.protect = async (req, res, next) => {
   let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
+  //Check if headers have authorization details and it should start with Bearer
+  if ( req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    //token is second item in authorization header
     token = req.headers.authorization.split(' ')[1];
   }
+  //If the token doesn't exists
   if (!token) {
     return res.status(401).json({
-      statsu: 'Failed',
+      status: 'Failed',
       message: 'Unauthorized, please login to continue',
     });
   }
+  //Verifying whether the token is valid or not
+  //Promisify returns a promise 
   const decoded = await util.promisify(jwt.verify)(
     token,
     process.env.JWT_SECRET
   );
+  //decoded object has id of the user
   const doesExist = await User.findById(decoded.id);
   if (!doesExist.id) {
     return res.status(401).json({
       status: 'Failed',
-      message: 'User no longer exists',
+      message: 'Invalid Login, please login again',
     });
   }
   next();
 };
-////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 //Remove stock from watchlist
 exports.removefromwatchlist = async (req, res, next) => {
   try {

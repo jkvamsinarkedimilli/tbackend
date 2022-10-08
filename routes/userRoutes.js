@@ -9,7 +9,7 @@ router.route('/login').post(userController.verifyuser);
 
 router
   .route('/portfolio/:type/:stockname')
-  .post(userController.protect, userController.modifyPortfolio);
+  .post(userController.protect, userController.modifyPortfolio); //protect is to control unauthorized access
 
 router
   .route('/getportfolio')
