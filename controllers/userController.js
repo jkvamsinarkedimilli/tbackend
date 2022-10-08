@@ -3,52 +3,51 @@ const UserDetail = require('../models/userDetailModel');
 const jwt = require('jsonwebtoken');
 const util = require('util');
 const axios = require('axios');
-////////////////////////////////////////////////////////////////////////////////////////////////////
 //Adding a new user to database
 exports.adduser = async (req, res, next) => {
   try {
     const newUser = await User.create({
       username: req.body.username,
+      email:req.body.email,
       password: req.body.password,
     });
+    const token = jwt.sign({id:newUser._id},process.env.JWT_SECRET,{expiresIn:process.env.JWT_EXPIRES_IN});
+    console.log(newUser,token);
     const userdetail = await UserDetail.create({
       username: req.body.username,
       watchlist: [],
       portfolio: [],
     });
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
     return res.status(201).json({
-      message: 'Account Created Successfully',
       status: 'Success',
-      token,
+      token
     });
   } catch (e) {
+    console.log(e);
     return res.status(400).json({
       status: 'Failed',
-      data: {
-        message: e,
-      },
+      message:e
     });
   }
 };
-////////////////////////////////////////////////////////////////////////////////////////////////////
 //Verifying a user
-exports.verifyuser = async (req, res) => {
+exports.verifyuser = async (req, res,next) => {
   try {
+    //Collecting the credentials from the request
     const username = req.body.username;
     const password = req.body.password;
     const response = await User.findOne({
       username,
-    }).select('+password');
+    }).select('+password'); // As we kept false for password + for by default not selected
     if (
       !response ||
       !(await response.checkPassword(password, response.password))
     ) {
       return res.status(401).json({
-        message: 'Invalid Password or Username',
+        message: 'Invalid Username or Password',
       });
     }
-    const token = jwt.sign({ id: response._id }, process.env.JWT_SECRET);
+    const token = jwt.sign({ id: response._id }, process.env.JWT_SECRET,{expiresIn:process.env.JWT_EXPIRES_IN});
     return res.status(200).json({
       message: 'Login Success',
       token,
@@ -59,7 +58,6 @@ exports.verifyuser = async (req, res) => {
     });
   }
 };
-////////////////////////////////////////////////////////////////////////////////////////////////////
 //Adding stocks to Watchlist
 exports.addtowatchlist = async (req, res) => {
   try {
